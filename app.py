@@ -1,36 +1,35 @@
 import os
-import sys
 import time
 import tempfile
-import subprocess
 import telebot
-from telebot import types
-from pypdf import PdfReader   # لقراءة معلومات PDF
+from docx import Document
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from reportlab.lib.styles import getSampleStyleSheet
+from pypdf import PdfReader
 
+# توكن البوت
 TOKEN = "8085614647:AAFg6oXkg0CdLeW2xoHMJ3lan53PGZjvIWE"
 bot = telebot.TeleBot(TOKEN)
 
-# --- تحويل DOCX إلى PDF باستخدام LibreOffice ---
-def convert_docx_to_pdf(input_path, output_path):
-    outdir = os.path.dirname(output_path)
-    cmd = [
-        "soffice",
-        "--headless",
-        "--convert-to", "pdf",
-        "--outdir", outdir,
-        input_path
-    ]
-    subprocess.run(cmd, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    base = os.path.splitext(os.path.basename(input_path))[0]
-    produced = os.path.join(outdir, base + ".pdf")
-    if produced != output_path and os.path.exists(produced):
-        os.replace(produced, output_path)
+# الحقوق
+BOT_RIGHTS = "🤍 تلجرام :- @altaee_z\n🌐موقعي : www.ali-Altaee.free.nf"
+
+# دالة التحويل من docx إلى PDF (نصوص فقط)
+def convert_docx_to_pdf_simple(input_path, output_path):
+    doc = Document(input_path)
+    pdf = SimpleDocTemplate(output_path)
+    styles = getSampleStyleSheet()
+    flow = []
+    for para in doc.paragraphs:
+        flow.append(Paragraph(para.text, styles["Normal"]))
+        flow.append(Spacer(1, 12))
+    pdf.build(flow)
     return os.path.exists(output_path)
 
 @bot.message_handler(commands=['start','help'])
 def send_welcome(message):
     bot.reply_to(message,
-        "👋 أرسل ملف .docx وسأحوّله إلى PDF، ثم أرسل لك معلومات عنه.")
+        "👋 أرسل ملف .docx وسأحوّله إلى PDF، مع عرض معلومات عنه.")
 
 @bot.message_handler(content_types=['document'])
 def handle_docs(message):
@@ -56,10 +55,9 @@ def handle_docs(message):
 
             output_pdf = os.path.join(tmpdir, os.path.splitext(filename)[0] + ".pdf")
 
-            bot.edit_message_text("🔄 جاري التحويل إلى PDF...",
-                                  chat_id, status.message_id)
+            bot.edit_message_text("🔄 جاري تحويل النصوص إلى PDF...", chat_id, status.message_id)
 
-            convert_docx_to_pdf(input_path, output_pdf)
+            convert_docx_to_pdf_simple(input_path, output_pdf)
 
             # حساب الوقت المستغرق
             elapsed = time.time() - start_time
@@ -69,34 +67,25 @@ def handle_docs(message):
             num_pages = len(reader.pages)
             pdf_size_mb = os.path.getsize(output_pdf) / (1024*1024)
 
-            bot.edit_message_text("📤 جاري إرسال ملف الـPDF...",
-                                  chat_id, status.message_id)
+            bot.edit_message_text("📤 جاري إرسال ملف الـPDF...", chat_id, status.message_id)
 
             with open(output_pdf, 'rb') as pdf_file:
                 bot.send_document(chat_id, pdf_file,
-                    caption="✅ تم التحويل بنجاح!")
+                    caption="✅ تم تحويل الملف بنجاح!")
 
-            # إرسال التفاصيل مع حقوق البوت
+            # إرسال التفاصيل مع الحقوق
             info_msg = (
-                f"📑 **تفاصيل الملف**\n"
+                f"📑 تفاصيل الملف\n"
                 f"• الحجم: {pdf_size_mb:.2f} MB\n"
                 f"• عدد الصفحات: {num_pages}\n"
                 f"• الوقت المستغرق: {elapsed:.2f} ثانية\n\n"
-                f"©️ 🤍 تلجرام :- @altaee_z "
+                f"{BOT_RIGHTS}"
             )
             bot.send_message(chat_id, info_msg, parse_mode="Markdown")
 
-    except subprocess.CalledProcessError as e:
-        bot.edit_message_text(
-            "❗ فشل التحويل — تأكد أن LibreOffice مثبت ويعمل.",
-            chat_id, status.message_id
-        )
     except Exception as e:
-        bot.edit_message_text(
-            f"❗ حدث خطأ: {e}",
-            chat_id, status.message_id
-        )
+        bot.edit_message_text(f"❗ حدث خطأ: {e}", chat_id, status.message_id)
 
-if __name__ == "__main__":
+if name == "main":
     print("🚀 Bot running...")
     bot.infinity_polling()
