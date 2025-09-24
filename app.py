@@ -37,10 +37,6 @@ def handle_docs(message):
     filename = doc.file_name or "document.docx"
     chat_id = message.chat.id
 
-    if not filename.lower().endswith(".docx"):
-        bot.reply_to(message, "❗ أرسل ملف بصيغة .docx فقط.")
-        return
-
     status = bot.reply_to(message, "⏳ جاري تحميل الملف...")
     start_time = time.time()
 
@@ -53,37 +49,51 @@ def handle_docs(message):
             with open(input_path, 'wb') as f:
                 f.write(downloaded)
 
-            output_pdf = os.path.join(tmpdir, os.path.splitext(filename)[0] + ".pdf")
+            file_extension = os.path.splitext(filename)[1].lower()
+            num_pages = None
+            is_pdf_or_docx = False
 
-            bot.edit_message_text("🔄 جاري تحويل النصوص إلى PDF...", chat_id, status.message_id)
-
-            convert_docx_to_pdf_simple(input_path, output_pdf)
-
+            # Check file type to get page count
+            if file_extension == '.docx':
+                doc_obj = Document(input_path)
+                num_pages = len(doc_obj.paragraphs)
+                is_pdf_or_docx = True
+            elif file_extension == '.pdf':
+                reader = PdfReader(input_path)
+                num_pages = len(reader.pages)
+                is_pdf_or_docx = True
+            
+            # Get file size
+            file_size_mb = os.path.getsize(input_path) / (1024*1024)
+            
             # Calculate elapsed time
             elapsed = time.time() - start_time
 
-            # Use python-docx to get a more accurate number of pages.
-            doc_obj = Document(input_path)
-            num_pages = len(doc_obj.paragraphs) # This gives a better estimate
-
-            # Get PDF details
-            pdf_size_mb = os.path.getsize(output_pdf) / (1024*1024)
+            # Prepare the caption
+            if is_pdf_or_docx:
+                caption = (
+                    f"✅ تم استلام الملف بنجاح!\n\n"
+                    f"📑 تفاصيل الملف\n"
+                    f"• الحجم: {file_size_mb:.2f} MB\n"
+                    f"• عدد الصفحات: {num_pages}\n"
+                    f"• الوقت المستغرق: {elapsed:.2f} ثانية\n\n"
+                    f"{BOT_RIGHTS}"
+                )
+            else:
+                caption = (
+                    f"✅ تم استلام الملف بنجاح!\n\n"
+                    f"📑 تفاصيل الملف\n"
+                    f"• الحجم: {file_size_mb:.2f} MB\n"
+                    f"• عدد الصفحات: غير متاح لهذا النوع من الملفات.\n"
+                    f"• الوقت المستغرق: {elapsed:.2f} ثانية\n\n"
+                    f"{BOT_RIGHTS}"
+                )
             
-            bot.edit_message_text("📤 جاري إرسال ملف الـPDF...", chat_id, status.message_id)
+            bot.edit_message_text("✅ تم إرسال التفاصيل...", chat_id, status.message_id)
 
-            # Prepare the caption with all details.
-            caption = (
-                f"✅ تم تحويل الملف بنجاح!\n\n"
-                f"📑 تفاصيل الملف\n"
-                f"• الحجم: {pdf_size_mb:.2f} MB\n"
-                f"• عدد الصفحات: {num_pages}\n"
-                f"• الوقت المستغرق: {elapsed:.2f} ثانية\n\n"
-                f"{BOT_RIGHTS}"
-            )
-            
-            with open(output_pdf, 'rb') as pdf_file:
-                # Send the document with the new combined caption.
-                bot.send_document(chat_id, pdf_file, caption=caption)
+            # Send the document with the new combined caption.
+            with open(input_path, 'rb') as received_file:
+                bot.send_document(chat_id, received_file, caption=caption)
 
     except Exception as e:
         bot.edit_message_text(f"❗ حدث خطأ: {e}", chat_id, status.message_id)
