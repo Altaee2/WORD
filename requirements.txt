@@ -1,6 +1,3 @@
-pyTelegramBotAPI
-pypdf
-gunicorn
 telebot
 python-docx
-reportlab
+pypdf
