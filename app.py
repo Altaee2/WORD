@@ -5,7 +5,7 @@ import telebot
 from docx import Document
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from pypdf import PdfReader # Keep this import, though we'll change how we use it.
+from pypdf import PdfReader
 
 # Bot token
 TOKEN = "8085614647:AAFg6oXkg0CdLeW2xoHMJ3lan53PGZjvIWE"
@@ -24,7 +24,7 @@ def convert_docx_to_pdf_simple(input_path, output_path):
         flow.append(Paragraph(para.text, styles["Normal"]))
         flow.append(Spacer(1, 12))
     pdf.build(flow)
-    return os.path.exists(output_path), len(flow)
+    return os.path.exists(output_path)
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -57,19 +57,18 @@ def handle_docs(message):
 
             bot.edit_message_text("🔄 جاري تحويل النصوص إلى PDF...", chat_id, status.message_id)
 
-            # Modified: convert_docx_to_pdf_simple now returns the number of pages.
             convert_docx_to_pdf_simple(input_path, output_pdf)
 
             # Calculate elapsed time
             elapsed = time.time() - start_time
 
+            # Use python-docx to get a more accurate number of pages.
+            doc_obj = Document(input_path)
+            num_pages = len(doc_obj.paragraphs) # This gives a better estimate
+
             # Get PDF details
             pdf_size_mb = os.path.getsize(output_pdf) / (1024*1024)
             
-            # Use pypdf for more accurate page count.
-            reader = PdfReader(output_pdf)
-            num_pages = len(reader.pages)
-
             bot.edit_message_text("📤 جاري إرسال ملف الـPDF...", chat_id, status.message_id)
 
             # Prepare the caption with all details.
