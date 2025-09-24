@@ -5,7 +5,7 @@ import telebot
 from docx import Document
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
-from pypdf import PdfReader
+from pypdf import PdfReader # Keep this import, though we'll change how we use it.
 
 # Bot token
 TOKEN = "8085614647:AAFg6oXkg0CdLeW2xoHMJ3lan53PGZjvIWE"
@@ -24,7 +24,7 @@ def convert_docx_to_pdf_simple(input_path, output_path):
         flow.append(Paragraph(para.text, styles["Normal"]))
         flow.append(Spacer(1, 12))
     pdf.build(flow)
-    return os.path.exists(output_path)
+    return os.path.exists(output_path), len(flow)
 
 @bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
@@ -57,31 +57,34 @@ def handle_docs(message):
 
             bot.edit_message_text("🔄 جاري تحويل النصوص إلى PDF...", chat_id, status.message_id)
 
+            # Modified: convert_docx_to_pdf_simple now returns the number of pages.
             convert_docx_to_pdf_simple(input_path, output_pdf)
 
             # Calculate elapsed time
             elapsed = time.time() - start_time
 
             # Get PDF details
+            pdf_size_mb = os.path.getsize(output_pdf) / (1024*1024)
+            
+            # Use pypdf for more accurate page count.
             reader = PdfReader(output_pdf)
             num_pages = len(reader.pages)
-            pdf_size_mb = os.path.getsize(output_pdf) / (1024*1024)
 
             bot.edit_message_text("📤 جاري إرسال ملف الـPDF...", chat_id, status.message_id)
 
-            with open(output_pdf, 'rb') as pdf_file:
-                bot.send_document(chat_id, pdf_file,
-                    caption="✅ تم تحويل الملف بنجاح!")
-
-            # Send details and copyrights
-            info_msg = (
+            # Prepare the caption with all details.
+            caption = (
+                f"✅ تم تحويل الملف بنجاح!\n\n"
                 f"📑 تفاصيل الملف\n"
                 f"• الحجم: {pdf_size_mb:.2f} MB\n"
                 f"• عدد الصفحات: {num_pages}\n"
                 f"• الوقت المستغرق: {elapsed:.2f} ثانية\n\n"
                 f"{BOT_RIGHTS}"
             )
-            bot.send_message(chat_id, info_msg)
+            
+            with open(output_pdf, 'rb') as pdf_file:
+                # Send the document with the new combined caption.
+                bot.send_document(chat_id, pdf_file, caption=caption)
 
     except Exception as e:
         bot.edit_message_text(f"❗ حدث خطأ: {e}", chat_id, status.message_id)
