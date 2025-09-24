@@ -86,6 +86,6 @@ def handle_docs(message):
     except Exception as e:
         bot.edit_message_text(f"❗ حدث خطأ: {e}", chat_id, status.message_id)
 
-if name == "main":
+if __name__ == "__main__":
     print("🚀 Bot running...")
     bot.infinity_polling()
