@@ -2,3 +2,4 @@ pyTelegramBotAPI
 pypdf
 gunicorn
 telebot
+pip install pyTelegramBotAPI python-docx reportlab pypdf
