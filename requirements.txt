@@ -1,3 +1,4 @@
 telebot
 python-docx
 pypdf
+reportlab
