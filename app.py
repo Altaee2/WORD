@@ -81,7 +81,7 @@ def handle_docs(message):
                 f"• الوقت المستغرق: {elapsed:.2f} ثانية\n\n"
                 f"{BOT_RIGHTS}"
             )
-            bot.send_message(chat_id, info_msg, parse_mode="Markdown")
+            bot.send_message(chat_id, info_msg)
 
     except Exception as e:
         bot.edit_message_text(f"❗ حدث خطأ: {e}", chat_id, status.message_id)
