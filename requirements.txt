@@ -1,0 +1,8 @@
+pyTelegramBotAPI
+pypdf
+gunicorn
+telebot
+os
+sys
+tempfile
+subprocess
