@@ -7,14 +7,14 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 from pypdf import PdfReader
 
-# توكن البوت
+# Bot token
 TOKEN = "8085614647:AAFg6oXkg0CdLeW2xoHMJ3lan53PGZjvIWE"
 bot = telebot.TeleBot(TOKEN)
 
-# الحقوق
+# Copyrights and contact info
 BOT_RIGHTS = "🤍 تلجرام :- @altaee_z\n🌐موقعي : www.ali-Altaee.free.nf"
 
-# دالة التحويل من docx إلى PDF (نصوص فقط)
+# Function to convert docx to PDF (text only)
 def convert_docx_to_pdf_simple(input_path, output_path):
     doc = Document(input_path)
     pdf = SimpleDocTemplate(output_path)
@@ -26,7 +26,7 @@ def convert_docx_to_pdf_simple(input_path, output_path):
     pdf.build(flow)
     return os.path.exists(output_path)
 
-@bot.message_handler(commands=['start','help'])
+@bot.message_handler(commands=['start', 'help'])
 def send_welcome(message):
     bot.reply_to(message,
         "👋 أرسل ملف .docx وسأحوّله إلى PDF، مع عرض معلومات عنه.")
@@ -59,10 +59,10 @@ def handle_docs(message):
 
             convert_docx_to_pdf_simple(input_path, output_pdf)
 
-            # حساب الوقت المستغرق
+            # Calculate elapsed time
             elapsed = time.time() - start_time
 
-            # معلومات الـPDF
+            # Get PDF details
             reader = PdfReader(output_pdf)
             num_pages = len(reader.pages)
             pdf_size_mb = os.path.getsize(output_pdf) / (1024*1024)
@@ -73,7 +73,7 @@ def handle_docs(message):
                 bot.send_document(chat_id, pdf_file,
                     caption="✅ تم تحويل الملف بنجاح!")
 
-            # إرسال التفاصيل مع الحقوق
+            # Send details and copyrights
             info_msg = (
                 f"📑 تفاصيل الملف\n"
                 f"• الحجم: {pdf_size_mb:.2f} MB\n"
